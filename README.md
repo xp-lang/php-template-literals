@@ -46,3 +46,7 @@ $ composer require xp-lang/php-template-literals
 ```
 
 No further action is required.
+
+See also
+--------
+* https://peps.python.org/pep-0750/ - Template Strings
