@@ -145,6 +145,28 @@ class TemplateLiteralsTest extends EmittingTest {
     Assert::equals(['base' => '//example.com', 'path' => '/users/%40me'], $t->newInstance()->run('@me'));
   }
 
+  #[Test]
+  public function json_example() {
+    $t= $this->type('class %T {
+      private function json($strings, ... $arguments) {
+        $s= "";
+        foreach ($arguments as $i => $argument) {
+          $s.= $strings[$i].json_encode($argument);
+        }
+        return $s.($strings[$i + 1] ?? "");
+      }
+
+      public function run($name, $args) {
+        return $this->json`{
+          "kind" : ${$name},
+          "args" : ${[0, ...$args]}
+        }`;
+      }
+    }');
+
+    Assert::equals(['kind' => 'test', 'args' => [0, 1, 2]], json_decode($t->newInstance()->run('test', [1, 2]), true));
+  }
+
   #[Test, Expect(class: Errors::class, message: '/Unexpected string "Test" \[line 1 of .+\]/')]
   public function cannot_suffix_other_literals() {
     $this->evaluate('$f"Test"');
