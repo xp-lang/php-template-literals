@@ -167,6 +167,35 @@ class TemplateLiteralsTest extends EmittingTest {
     Assert::equals(['kind' => 'test', 'args' => [0, 1, 2]], json_decode($t->newInstance()->run('test', [1, 2]), true));
   }
 
+  #[Test]
+  public function jsx_example() {
+    $t= $this->type('class %T {
+      private function jsx($strings, ... $arguments) {
+        $s= "";
+        $tag= false;
+        foreach ($strings as $i => $string) {
+          $s.= strtr($string, ["<>" => "<div>", "</>" => "</div>"]);
+          $open= substr_count($string, "<");
+          $close= substr_count($string, ">");
+          if ($open > $close) {
+            $s.= "\"".htmlspecialchars($arguments[$i] ?? "")."\"";
+          } else {
+            $s.= htmlspecialchars($arguments[$i] ?? "");
+          }
+        }
+        return $s;
+      }
+
+      public function run($title, $class= "test") {
+        return $this->jsx`<>
+          <h1 class=${$class}>${strtoupper($title)}</h1>
+        </>`;
+      }
+    }');
+
+    Assert::matches('/<div>.+<h1 class="test">TEST &amp; RUN<\/h1>.+<\/div>/s', $t->newInstance()->run('Test & run'));
+  }
+
   #[Test, Expect(class: Errors::class, message: '/Unexpected string "Test" \[line 1 of .+\]/')]
   public function cannot_suffix_other_literals() {
     $this->evaluate('$f"Test"');
