@@ -3,13 +3,14 @@
 use lang\ast\Errors;
 use lang\ast\unittest\emit\EmittingTest;
 use test\{Assert, Before, Expect, Test};
+use util\Date;
 
 class TemplateLiteralsTest extends EmittingTest {
   private $format;
 
   /** Evaluates a strign template */
   private function evaluate(string $template, array $arguments= []) {
-    return $this->type('class %T { public function run($f, $arguments) { return '.$template.'; } }')
+    return $this->type('use util\Date; class %T { public function run($f, $arguments) { return '.$template.'; } }')
       ->newInstance()
       ->run($this->format, $arguments)
     ;
@@ -20,7 +21,12 @@ class TemplateLiteralsTest extends EmittingTest {
     $this->format= function($strings, ... $arguments) {
       $r= '';
       foreach ($strings as $i => $string) {
-        $r.= $string.htmlspecialchars($arguments[$i] ?? '');
+        $argument= $arguments[$i] ?? '';
+        if ($argument instanceof Date) {
+          $r.= $string.$argument->format('%Y-%m-%d');
+        } else {
+          $r.= $string.htmlspecialchars($argument);
+        }
       }
       return $r;
     };
@@ -69,6 +75,14 @@ class TemplateLiteralsTest extends EmittingTest {
   #[Test]
   public function evaluates_global_constant() {
     Assert::equals('PHP_OS = '.PHP_OS, $this->evaluate('$f`PHP_OS = ${PHP_OS}`'));
+  }
+
+  #[Test]
+  public function use_statement_honored() {
+    Assert::equals(
+      'It is 1970-01-01',
+      $this->evaluate('$f`It is ${new Date(0)}`')
+    );
   }
 
   #[Test]
